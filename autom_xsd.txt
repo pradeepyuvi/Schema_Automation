@@ -5,74 +5,121 @@ from operator import itemgetter
 import prop
 import re
 
-Standardized_mapping_file = pd.ExcelFile(prop.path) #path of mapping doc
-Name_of_the_sheet_column=prop.mapping_doc #Path list and col name
-Standardized_column_data=pd.DataFrame()
+Standardized_mapping_file = pd.ExcelFile(prop.path)  # path of mapping doc
+Name_of_the_sheet_column = prop.mapping_doc  # Path list and col name
+# Standardized_column_data = pd.DataFrame()
 # print("########")
 # print(sheet)
+# list to hold the components as a list
+list_components = []
 
-#list to hold the components as a list
-list_components=[]
 
-#repeat through each sheetto create a single dataframe
-for sheet_number in range(len(sheet)):
-        #print(list(sheet.keys())[sheet_number])
-        sh_name=list(sheet.keys())[sheet_number]
-        Standardized_column_data1= pd.read_excel(Standardized_mapping_file, sheet_number=sh_name,usecols = sheet[sh_name])
-        #print(df1.columns)
-        Standardized_column_data1.dropna(subset=[prop.colName],inplace=True)
-        Standardized_column_data1.rename(columns = {prop.colName:'element'},inplace=True)
-     #print(df1)
+# repeat through each sheetto create a single dataframe
+def sheet_data(Name_of_the_sheet_column):
+    Standardized_column_data = pd.DataFrame()
+    # print(Standardized_column_data)
+    for sheet_number in range(len(Name_of_the_sheet_column)):
+        # print(list(sheet.keys())[sheet_number])
+        sh_name = list(Name_of_the_sheet_column.keys())[sheet_number]
+        # print(sh_name)
+        Standardized_column_data1 = pd.read_excel(Standardized_mapping_file, sheet_name=sh_name,
+                                                  usecols=Name_of_the_sheet_column[sh_name])
+        # print(df1.columns)
+        Standardized_column_data1.dropna(subset=[prop.colName], inplace=True)
+        Standardized_column_data1.rename(columns={prop.colName: 'element'}, inplace=True)
+        # print(Standardized_column_data1)
+        # print(df1)
         Standardized_column_data = Standardized_column_data.append(Standardized_column_data1)
-     #print(df2)
-#print(df2)
-list_components=Standardized_column_data.values.tolist()
+    # print(Standardized_column_data)
+    return (Standardized_column_data)
 
-#print("list_componenet",list_components)
+    # print(df2)
 
 
-splitted_array=[] #list to hold split arrays of components
+# print(df2)
+temp = sheet_data(Name_of_the_sheet_column)
+list_components = temp.values.tolist()
+# print("list_componenet",list_components)
 
-#list to hold elements with multiple entries in a cell
-multiplelist=[]
-for list_component in list_components:
-    #element=list_components[0]
-    element=list_component[0]
-    #print(element)
-    #if there are multiple entries ina  single cell in the excel sheet
-    if "\n" in element:
-        list_components.remove(list_component)
-        multiplelist.append(list_component)
-        continue
-#print(multiplelist)
-for m_list in multiplelist:
-    element= m_list[0]
-    #print(element)
-    split_element = element.split("\n")
-    for ele in split_element:
-        #print(ele)
-        list_components.append([ele.strip()]) #adding the separate elements in a single cell to the list_components
 
-#converting them into dfwith element as the header
-Standardized_mapping_file_with_head=pd.DataFrame(list_components,columns=['element'])
+# print("list_componenet",list_components)
 
-#converting them into split array and naming the column as components
-for component in Standardized_mapping_file_with_head['element']:
-    splitted_components=component.split('/')
-    splitted_array.append(result)
-#print(list1)
-#list1=list2
-#print(list2)
-Standardized_mapping_file_with_head=pd.DataFrame(list_components,columns=['element'])
-Standardized_mapping_file_with_head['components']=splitted_array
-Standardized_mapping_file=Standardized_mapping_file_with_head.reset_index(drop=True)
-pd.set_option('display.max_rows',None)
-#final df
+splitted_array = []  # list to hold split arrays of components
+
+
+def remove_multiple_entries(list_components):
+    multiplelist, resulting_list_components = [], list_components
+    # print(resulting_list_components)
+    for list_component in resulting_list_components:
+        element = list_component[0]
+        # print(element)
+        # if there are multiple entries ina  single cell in the excel sheet
+        if "\n" in element:
+            resulting_list_components.remove(list_component)
+            multiplelist.append(list_component)
+            # print(resulting_list_components)
+    return multiplelist, resulting_list_components
+    # print(multiplelist)
+
+
+# Removing all list elements which don't contain artifact
+def remove_unknown_elements(list_components):
+    for element in list_components:
+        if 'artifact' not in element[0]:
+            list_components.remove(element)
+    return list_components
+
+
+# list to hold elements with multiple entries in a cell
+def appending_mutlipleList_elements(list_components):
+    multiplelist, resulting_list_components = remove_multiple_entries(list_components)
+    for m_list in multiplelist:
+        element = m_list[0]
+        # print(element)
+        split_element = element.split("\n")
+        for ele in split_element:
+            # ele_striped = [ele.strip()]
+            resulting_list_components.append([ele.strip()])
+            # list_components.append([ele.strip()])
+            # adding the separate elements in a single cell to the list_components
+
+    # print(resulting_list_components)
+    return remove_unknown_elements(resulting_list_components)
+
+
+# converting them into dfwith element as the header
+Standardized_mapping_file_with_head = pd.DataFrame(appending_mutlipleList_elements(list_components),
+                                                   columns=['element'])
+
+
+# print(appending_mutlipleList_elements(list_components))
+# print("Standardized_mapping_file_with_head", Standardized_mapping_file_with_head)
+
+
+# converting them into split array and naming the column as components
+def split_Component_elements(Standardized_mapping_file_with_head):
+    for component in Standardized_mapping_file_with_head['element']:
+        splitted_components = component.split('/')
+        splitted_array.append(splitted_components)
+    return splitted_array
+
+
+# print(list1)
+# list1=list2
+# print(list2)
+splitted_array = split_Component_elements(Standardized_mapping_file_with_head)
+# print("splittedarray", splitted_array)
+# Standardized_mapping_file_with_head = pd.DataFrame(appending_mutlipleList_elements(list_components), columns=['element'])
+Standardized_mapping_file_with_head['components'] = splitted_array
+Standardized_mapping_file = Standardized_mapping_file_with_head.reset_index(drop=True)
+pd.set_option('display.max_rows', None)
+
+# final df
 print(Standardized_mapping_file)
-#convert to 2d array
-Standardized_element_array=Standardized_mapping_file.values.tolist()
+# convert to 2d array
+Standardized_element_array = Standardized_mapping_file.values.tolist()
 
-#header of the xsd file
+# header of the xsd file
 main_string = """<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 <xs:element name="artifact">
@@ -83,138 +130,169 @@ main_string = """<?xml version="1.0" encoding="UTF-8"?>
 </xs:element>"""
 
 
-#function to write "name" elements under artifact
-def task(element_array, main_string):
-    
+def remove_attributes_from_artifact_elements(elements):
+    isodate_check = "@isoDate"
+    attribute_check = "@"
+    temp = elements[1]
+    if isodate_check in temp:
+        attribute_split_list = temp.split('@isoDate')
+        entry = ("""<xs:element name= """ + "\"" + attribute_split_list[0].strip(" ") + "\""+ """ type="dateType""" + "\"" + " minOccurs=\"0\"" + "/" + ">")
 
-    components_list = [two_length for two_length in Standardized_mapping_file["components"].tolist() if len(two_length) == 2]
-    artifact_direct_child=[] #list to hold direct children to artifact
-    
-    #avoid repeating elements
-    for element_data in components_list:
-        if element_data not in artifact_direct_child:
-            artifact_direct_child.append(element_data)
-    #print(artifact_direct_child)
-    begining_data_elements = [] #list to hold name stats
-    for elements in artifact_direct_child:
-      artifact_direct_child = f"""<xs:element name="{elements[1]}" type="xs:string" minOccurs="0"/>"""
-      begining_data_elements.append(artifact_direct_child)
-    combined_begining_data_elements = '\n'.join(begining_data_elements)
-    #print(begining_elements)
-    #46 is the no of chars to reach the sequence
-    begining_elements = main_string[:-46] + data + '\n'
-    #print(begining_elements)
+    elif attribute_check in temp:
+        attribute_split_list = temp.split('@')
+        entry = ("<xs:element name= " + "\"" + attribute_split_list[0].strip(" ") + "\""+ """ type="xs:string""" + "\"" + " minOccurs=\"0\"" + "/" + ">")
+
+    else:
+        entry = ("<xs:element name= "+ "\"" +elements[1]+ "\"" +""" type="xs:string""" + "\"" + " minOccurs=\"0\"" + "/" + ">")
+
+    return entry
+
+def remove_attribute_from_artifact_ref(ref_data):
+    entry=""
+    temp = ref_data[1]
+    attribute_split_list = []
+    attribute_check = "@"
+    if attribute_check in temp:
+        attribute_split_list = temp.split('@')
+        entry = ("<xs:element ref= " + "\"" + attribute_split_list[0].strip(" ") + "\"" + " minOccurs=\"0\"" + "/" + ">")
+    else:
+        entry= ("<xs:element ref= " + "\"" + ref_data[1] + "\"" + " minOccurs=\"0\"" + "/" + ">")
+    return(entry)
+
+
+order_data= Standardized_mapping_file["components"].tolist()
+def fix_order(order_data,main_string) :
+    ordered_list = []
+    for element in order_data :
+        if len(element) == 2 :
+            entry = remove_attributes_from_artifact_elements(element)
+            ordered_list.append(entry)
+        elif len(element) > 2 :
+            entry = remove_attribute_from_artifact_ref(element)
+            ordered_list.append(entry)
+
+
+    res = []
+    [res.append(x) for x in ordered_list if x not in res]
+    combined_begining_data_elements = '\n'.join(res)
+
+    begining_elements = main_string[:-46] + combined_begining_data_elements + '\n'
     return begining_elements
-merged_begining_elements=task(element_array, main_string)
-#print(output)
+
+#fix Order ends here
+
+merged_begining_elements = fix_order(order_data, main_string)
+
+
+
+
+
+# print(output)
 # with open ("xsdfile.xsd","w") as fileop:
 #         fileop.write(output)
 
+# componentswith lenghth = 1
+# elements with @type
+# changing it into set to get unique values
+# create the type_enumeration string
 
-#componentswith lenghth = 1
-#elements with @type
-#changing it into set to get unique values
-#create the type_enumeration string
+# picking elements with length 1 => type and source
+# print(combined_res_list)
+def type_source(Standardized_mapping_file):
+    type_srce = [typ_src for typ_src in Standardized_mapping_file["components"] if len(typ_src) == 1]
+    res = type_srce
+    # print(res)
+    combined_res_list = []
+    combined_res = list(map(''.join, res))
+    # print(combinedres)
+    combined_res_list = []
+    combined_res_list = list(set(combined_res))
+    typ = "artifact @[T/t]ype"
+    last_part = "</xs:sequence>" + '<xs:attribute name="type" use="required">' + '<xs:simpleType>' + '<xs:restriction base="xs:string">\n'
+    for type in combined_res_list:
+        # checking for t in each of combine_res_list elements
+        if re.match(typ, type, flags=re.IGNORECASE):
+            # print(i)
+            value_typ = typ.lstrip(typ + "=")  # picks up the value
+            # print(value_typ)
+            last_part = last_part + ('\t<xs:enumeration value=' + value_typ + '/>\n')
 
-#picking elements with length 1 => type and source
-res = [typ_src for typ_src in Standardized_mapping_file["components"] if len(typ_src)==1]
-res=typ_src
-#print(res)
-combined_res_list=[]
-combined_res = list(map(''.join, res))
-#print(combinedres)
-combined_res_list=[]
-combined_res_list = list(set(combined_res))
-#print(combined_res_list) 
-typ= "artifact @[T/t]ype"
-last_part="</xs:sequence>"+'<xs:attribute name="type" use="required">'+'<xs:simpleType>'+ '<xs:restriction base="xs:string">\n'
-for type in combine_res_list:
+    last_part = last_part + (
+            '</xs:restriction>' + '</xs:simpleType>' + '</xs:attribute>\n' + '<xs:attribute name="source" use="required">' + '<xs:simpleType>' + '<xs:restriction base="xs:string">\n')
 
-    #checking for t in each of combine_res_list elements
-    if re.match(typ,type,flags=re.IGNORECASE):
-        #print(i)
-        value_typ=typ.lstrip(typ+"=") #picks up the value
-        #print(value_typ)
-        last_part=last_part+('\t<xs:enumeration value='+value_typ+'/>\n')
-last_part=last_part+('</xs:restriction>' +'</xs:simpleType>'+'</xs:attribute>\n'+'<xs:attribute name="source" use="required">'+'<xs:simpleType>'+ '<xs:restriction base="xs:string">\n')
-src= r"artifact @[S/s]ource"
-for srce in combine_res_list:
-    if re.match(src,srce,flags=re.IGNORECASE):
-        #print(i)
-        value_src=srce.lstrip(src+"=")
-        #print(value_src)
-        last_part=last_part+('\t<xs:enumeration value='+value_src+'/>\n')
-last_part=last_part+('</xs:restriction>' +'</xs:simpleType>'+'</xs:attribute>'+"</xs:complexType>"+"</xs:element>")
-#last_part has source and type attributes to artifact ==> will be used to attach after refs
-
-
-#adding ref elements to the artifact
-ref_ele=Standardized_mapping_file.loc[Standardized_mapping_file['components'].str.len()>2]
-#print(ref_ele)
-stored_components=ref_ele['components']
-get_elements=stored_components.apply(itemgetter(1))
-set_elements=set(get_elements)
-iterator=iter(set_elements)
-empty_string=""
-for ref_data in set_elements:
-    all_elements = ("<xs:element ref= "+"\""+ref_data+"\""+"/"+ ">")
-    empty_string=empty_string+all_elements
-
-reference_variable=empty_string+last_part
-#added refs to artifact and closd with artifact attributes
+    src = r"artifact @[S/s]ource"
+    for srce in combined_res_list:
+        if re.match(src, srce, flags=re.IGNORECASE):
+            # print(i)
+            value_src = srce.lstrip(src + "=")
+            # print(value_src)
+            last_part = last_part + ('\t<xs:enumeration value=' + value_src + '/>\n')
+    last_part = last_part + (
+            '</xs:restriction>' + '</xs:simpleType>' + '</xs:attribute>' + "</xs:complexType>" + "</xs:element>")
+    # last_part has source and type attributes to artifact ==> will be used to attach after refs
+    return last_part
 
 
-#handling elements with more than 1 child to artifact
-ref_elem =Standardized_mapping_file.loc[Standardized_mapping_file["components"].str.len()>2]
-ref_elem_str = ref_elem["components"]
-#print(ref_df_str)
-Storing_ref_elem_arr = ref_elem.to_numpy() 
-additional_elements={} #dictionary to hold parents and children
-
-#looping through the index of the selected components
-for indx in ref_elem_str.index:
-    count=-1
-    selected_components = ref_elem_str[indx]
-    #print("#######")
-    #print(ele)
-    #print(ele,type(el[i]))
-
-    #looping from end till artifact through each element and creating dictionary entries
-    while selected_components[count]!=selected_components[1]:
-
-        #if element already in the dict, append to its values
-        if selected_components[count-1] in additional_elements.keys():
-            additional_elements[selected_components[count-1]].append(ref_elem_str[indx][count])
-        #if element not present, create an array and append the value to the element entry in the dict
-        else:
-            selected_component =[]
-            selected_component.append(ref_elem_str[indx][count])
-            additional_elements[ref_elem_str[ind][count-1]]=selected_component
-            #print("4",additional_elements)
-        count=count-1
 
 
-#delete repeating elements in the dictionary for each entry of element
-for repeated_elem in additional_elements:
-    additional_elements[repeated_elem] = list(set(additional_elements[repeated_elem]))
+# handling elements with more than 1 child to artifact
+def index_addition_data(Standardized_mapping_file):
+    ref_elem = Standardized_mapping_file.loc[Standardized_mapping_file["components"].str.len() > 2]
+    ref_elem_str = ref_elem["components"]
+    # print(ref_df_str)
+    # print(ref_elem_str.index)
+    Storing_ref_elem_arr = ref_elem.to_numpy()
+    additional_elements = {}  # dictionary to hold parents and children
+    # looping through the index of the selected components
+    for indx in ref_elem_str.index:
+        count = -1
+        selected_components = ref_elem_str[indx]
+        # print("#######")
+        # print(ele)
+        # print(ele,type(el[i]))
+        # looping from end till artifact through each element and creating dictionary entries
+        while selected_components[count] != selected_components[1]:
 
-#print(additional_elements)
+            # if element already in the dict, append to its values
+            if selected_components[count - 1] in additional_elements.keys():
+                additional_elements[selected_components[count - 1]].append(ref_elem_str[indx][count])
+            # if element not present, create an array and append the value to the element entry in the dict
+            else:
+                selected_component = []
+                selected_component.append(ref_elem_str[indx][count])
+                additional_elements[ref_elem_str[indx][count - 1]] = selected_component
+                # print("4",additional_elements)
+            count = count - 1
 
-master_string=""
-for directory in additional_elements:
-#creating blocks for each element outside artifact
-    
-    master_string += f'<xs:element name="{directory}">\n<xs:complexType>\n<xs:sequence>\n'
+        # delete repeating elements in the dictionary for each entry of element
+        for repeated_elem in additional_elements:
+            additional_elements[repeated_elem] = list(set(additional_elements[repeated_elem]))
+        # print(additional_elements)
+    return (additional_elements)
 
-    #adding child to each of the elements
-    for ref_name in additional_elements[i]:
-        #checking if the element is itself a parent==> to add ref instead of name
-        if j in additional_elements.keys():
-            master_string+=f'<xs:element ref="{ref_name}" type="xs:string" minOccurs="0" />'
-        else:
-            master_string+=f'<xs:element name="{ref_name}" type="xs:string" minOccurs="0" />'
-    master_string+="</xs:sequence>\n</xs:complexType>\n</xs:element>\n"
-#print(master_string)
 
-with open ("clone.xsd","w") as fileop:
-    fileop.write(output+reference_variable+master_string+"</xs:schema>")
+# print(additional_elements)
+def additional_ele_data(Standardized_mapping_file):
+    master_string = ""
+    additional_elements = index_addition_data(Standardized_mapping_file)
+    # print(additional_elements)
+    for directory in additional_elements:
+        # creating blocks for each element outside artifact
+
+        master_string += f'<xs:element name="{directory}">\n<xs:complexType>\n<xs:sequence>\n'
+
+        # adding child to each of the elements
+        for ref_name in additional_elements[directory]:
+            # checking if the element is itself a parent==> to add ref instead of name
+            if ref_name in additional_elements.keys():
+                master_string += f'<xs:element ref="{ref_name}" type="xs:string" minOccurs="0" />'
+            else:
+                master_string += f'<xs:element name="{ref_name}" type="xs:string" minOccurs="0" />'
+        master_string += "</xs:sequence>\n</xs:complexType>\n</xs:element>\n"
+    return (master_string)
+    # print(master_string)
+
+
+with open("xsdfile.xsd", "w") as fileop:
+    fileop.write(merged_begining_elements + type_source(Standardized_mapping_file) + additional_ele_data(
+        Standardized_mapping_file) + "</xs:schema>")
